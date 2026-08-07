@@ -17,12 +17,24 @@ export default function Sidebar() {
           🚗 Vehículos
         </Link>
 
-        <Link href="/clients" className="block hover:text-blue-400">
+        <Link href="/dashboard/clients" className="block hover:text-blue-400">
           👥 Clientes
         </Link>
 
-        <Link href="/appointments" className="block hover:text-blue-400">
+        <Link href="/dashboard/repairs" className="block hover:text-blue-400">
+          🔧 Reparaciones
+        </Link>
+
+        <Link href="/dashboard/appointments" className="block hover:text-blue-400">
           📅 Citas
+        </Link>
+
+        <Link href="/dashboard/invoices" className="block hover:text-blue-400">
+          🧾 Facturas
+        </Link>
+
+        <Link href="/dashboard/settings" className="block hover:text-blue-400">
+          ⚙️ Ajustes
         </Link>
 
       </nav>

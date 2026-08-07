@@ -10,6 +10,7 @@ export default function VehiclesPage() {
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
   const [client, setClient] = useState("");
+  const [search, setSearch] = useState("");
 
   const [vehicles, setVehicles] = useState([
     {
@@ -29,7 +30,7 @@ export default function VehiclesPage() {
       status: "Finalizado",
     },
   ]);
-
+  
   const handleSave = () => {
     if (!plate || !brand || !model || !client) return;
 
@@ -51,6 +52,16 @@ export default function VehiclesPage() {
 
     setOpen(false);
   };
+  const handleDelete = (id: number) => {
+    setVehicles(
+      vehicles.filter((vehicle) => vehicle.id !== id)
+    );
+  };
+  const filteredVehicles = vehicles.filter(
+    (vehicle) =>
+      vehicle.plate.toLowerCase().includes(search.toLowerCase()) ||
+      vehicle.client.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="p-8">
@@ -65,7 +76,18 @@ export default function VehiclesPage() {
         </button>
       </div>
 
-      <VehiclesTable vehicles={vehicles} />
+      <input
+        type="text"
+        placeholder="🔍 Buscar por matrícula o cliente..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="w-full border rounded-xl p-3 mb-6"
+      />
+
+      <VehiclesTable
+        vehicles={filteredVehicles}
+        onDelete={handleDelete}
+      />
 
       {open && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
