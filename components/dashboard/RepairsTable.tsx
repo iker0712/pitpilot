@@ -4,17 +4,25 @@ type Repair = {
   client: string;
   mechanic: string;
   status: string;
-  price: string;
+  price: number;
+  vehicle_id: number | null;
 };
 
 export default function RepairsTable({
   repairs,
+  onDelete,
+  onEdit,
 }: {
   repairs: Repair[];
+  onDelete?: (id: number) => void;
+  onEdit?: (repair: Repair) => void;
 }) {
+  const showActions = !!onDelete || !!onEdit;
+
   return (
-    <div className="bg-white rounded-2xl shadow overflow-hidden">
-      <table className="w-full table-auto">
+    <div className="overflow-x-auto">
+      <table className="w-full">
+
         <thead className="bg-slate-100">
           <tr>
             <th className="text-left p-4">Vehículo</th>
@@ -22,17 +30,32 @@ export default function RepairsTable({
             <th className="text-left p-4">Mecánico</th>
             <th className="text-left p-4">Estado</th>
             <th className="text-left p-4">Precio</th>
-            <th className="text-center p-4">Acciones</th>
+
+            {showActions && (
+              <th className="text-left p-4">
+                Acciones
+              </th>
+            )}
           </tr>
         </thead>
 
         <tbody>
           {repairs.map((repair) => (
-            <tr key={repair.id} className="border-t hover:bg-slate-50">
+            <tr
+              key={repair.id}
+              className="border-t hover:bg-slate-50"
+            >
+              <td className="p-4">
+                {repair.vehicle}
+              </td>
 
-              <td className="p-4">{repair.vehicle}</td>
-              <td className="p-4">{repair.client}</td>
-              <td className="p-4">{repair.mechanic}</td>
+              <td className="p-4">
+                {repair.client}
+              </td>
+
+              <td className="p-4">
+                {repair.mechanic}
+              </td>
 
               <td className="p-4">
                 <span
@@ -48,25 +71,44 @@ export default function RepairsTable({
                 </span>
               </td>
 
-              <td className="p-4">{repair.price}</td>
-
               <td className="p-4">
-                <div className="flex justify-center gap-2">
-
-                  <button className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg">
-                    Editar
-                  </button>
-
-                  <button className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg">
-                    Eliminar
-                  </button>
-
-                </div>
+                {repair.price}€
               </td>
+
+              {showActions && (
+                <td className="p-4">
+                  <div className="flex gap-2">
+
+                    {onDelete && (
+                      <button
+                        onClick={() =>
+                          onDelete(repair.id)
+                        }
+                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg"
+                      >
+                        Eliminar
+                      </button>
+                    )}
+
+                    {onEdit && (
+                      <button
+                        onClick={() =>
+                          onEdit(repair)
+                        }
+                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg"
+                      >
+                        Editar
+                      </button>
+                    )}
+
+                  </div>
+                </td>
+              )}
 
             </tr>
           ))}
         </tbody>
+
       </table>
     </div>
   );
