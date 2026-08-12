@@ -34,18 +34,23 @@ export default function AppointmentsPage() {
   const [reason, setReason] = useState("");
   const [status, setStatus] = useState("Pendiente");
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("Todas");
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // =========================
   // CARGAR DATOS
+  // =========================
+
   useEffect(() => {
     const loadData = async () => {
       const appointmentsResult = await supabase
         .from("appointments")
         .select("*")
-        .order("date", { ascending: true });
+        .order("date", { ascending: true })
+        .order("time", { ascending: true });
 
       const vehiclesResult = await supabase
         .from("vehicles")
@@ -80,7 +85,10 @@ export default function AppointmentsPage() {
     loadData();
   }, []);
 
+  // =========================
   // RESET FORMULARIO
+  // =========================
+
   const resetForm = () => {
     setVehicleId("");
     setDate("");
@@ -90,7 +98,10 @@ export default function AppointmentsPage() {
     setEditingId(null);
   };
 
+  // =========================
   // GUARDAR / EDITAR
+  // =========================
+
   const handleSave = async () => {
     if (!vehicleId || !date || !time || !reason) {
       alert("Completa todos los campos");
@@ -178,23 +189,30 @@ export default function AppointmentsPage() {
       return;
     }
 
-    setAppointments((current) => [
-      ...current,
-      data,
-    ]);
+    setAppointments((current) =>
+      [...current, data].sort((a, b) => {
+        const dateA = `${a.date} ${a.time}`;
+        const dateB = `${b.date} ${b.time}`;
+
+        return dateA.localeCompare(dateB);
+      })
+    );
 
     resetForm();
     setOpen(false);
   };
 
+  // =========================
   // EDITAR
+  // =========================
+
   const handleEdit = (
     appointment: Appointment
   ) => {
     setEditingId(appointment.id);
 
     setVehicleId(
-      appointment.vehicle_id
+      appointment.vehicle_id !== null
         ? String(appointment.vehicle_id)
         : ""
     );
@@ -209,7 +227,10 @@ export default function AppointmentsPage() {
     setOpen(true);
   };
 
+  // =========================
   // ELIMINAR
+  // =========================
+
   const handleDelete = async (id: number) => {
     const confirmDelete = confirm(
       "¿Seguro que quieres eliminar esta cita?"
@@ -245,26 +266,67 @@ export default function AppointmentsPage() {
     );
   };
 
-  // BUSCAR
+  // =========================
+  // FECHA DE HOY
+  // =========================
+
+  const today = new Date()
+    .toISOString()
+    .split("T")[0];
+
+  // =========================
+  // FILTRAR CITAS
+  // =========================
+
   const filteredAppointments =
     appointments.filter(
-      (appointment) =>
-        appointment.client
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        appointment.vehicle
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        appointment.reason
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        appointment.status
-          .toLowerCase()
-          .includes(search.toLowerCase())
+      (appointment) => {
+        const matchesSearch =
+          appointment.client
+            .toLowerCase()
+            .includes(search.toLowerCase()) ||
+          appointment.vehicle
+            .toLowerCase()
+            .includes(search.toLowerCase()) ||
+          appointment.reason
+            .toLowerCase()
+            .includes(search.toLowerCase()) ||
+          appointment.status
+            .toLowerCase()
+            .includes(search.toLowerCase());
+
+        const matchesFilter =
+          filter === "Todas"
+            ? true
+            : filter === "Hoy"
+            ? appointment.date === today
+            : appointment.status === filter;
+
+        return (
+          matchesSearch &&
+          matchesFilter
+        );
+      }
     );
+
+  // =========================
+  // CITAS DE HOY
+  // =========================
+
+  const todayAppointments =
+    appointments
+      .filter(
+        (appointment) =>
+          appointment.date === today
+      )
+      .sort((a, b) =>
+        a.time.localeCompare(b.time)
+      );
 
   return (
     <div className="p-8">
+
+      {/* CABECERA */}
 
       <div className="flex justify-between items-center mb-8">
 
@@ -284,6 +346,8 @@ export default function AppointmentsPage() {
 
       </div>
 
+      {/* BUSCADOR */}
+
       <input
         type="text"
         placeholder="🔍 Buscar cita..."
@@ -294,6 +358,36 @@ export default function AppointmentsPage() {
         className="w-full border rounded-xl p-3 mb-6"
       />
 
+      {/* FILTROS */}
+
+      <div className="flex flex-wrap gap-3 mb-6">
+
+        {[
+          "Todas",
+          "Hoy",
+          "Pendiente",
+          "Completada",
+          "Cancelada",
+        ].map((option) => (
+          <button
+            key={option}
+            onClick={() =>
+              setFilter(option)
+            }
+            className={`px-4 py-2 rounded-xl font-medium transition ${
+              filter === option
+                ? "bg-blue-600 text-white"
+                : "bg-white text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            {option}
+          </button>
+        ))}
+
+      </div>
+
+      {/* CONTENIDO */}
+
       {loading ? (
         <div className="bg-white rounded-2xl shadow p-8 text-center">
           Cargando citas...
@@ -301,72 +395,62 @@ export default function AppointmentsPage() {
       ) : (
         <div className="bg-white rounded-2xl shadow overflow-hidden">
 
-          <table className="w-full">
+          {/* CONTADOR */}
 
-            <thead className="bg-slate-100">
-              <tr>
+          <div className="p-4 border-b text-slate-600">
 
-                <th className="text-left p-4">
-                  Fecha
-                </th>
+            <span className="font-semibold">
+              {todayAppointments.length}
+            </span>{" "}
+            citas programadas para hoy
 
-                <th className="text-left p-4">
-                  Hora
-                </th>
+          </div>
 
-                <th className="text-left p-4">
-                  Cliente
-                </th>
+          {/* AGENDA DE HOY */}
 
-                <th className="text-left p-4">
-                  Vehículo
-                </th>
+          <div className="p-6 border-b">
 
-                <th className="text-left p-4">
-                  Motivo
-                </th>
+            <h2 className="text-xl font-bold mb-4">
+              Agenda de hoy
+            </h2>
 
-                <th className="text-left p-4">
-                  Estado
-                </th>
+            {todayAppointments.length ===
+            0 ? (
+              <p className="text-slate-500">
+                No hay citas programadas
+                para hoy.
+              </p>
+            ) : (
+              <div className="space-y-3">
 
-                <th className="text-center p-4">
-                  Acciones
-                </th>
+                {todayAppointments.map(
+                  (appointment) => (
+                    <div
+                      key={appointment.id}
+                      className="flex items-center justify-between bg-slate-50 rounded-xl p-4"
+                    >
 
-              </tr>
-            </thead>
+                      <div>
 
-            <tbody>
+                        <p className="font-bold">
+                          {appointment.time.slice(
+                            0,
+                            5
+                          )}
+                        </p>
 
-              {filteredAppointments.map(
-                (appointment) => (
-                  <tr
-                    key={appointment.id}
-                    className="border-t hover:bg-slate-50"
-                  >
+                        <p className="text-slate-700">
+                          {appointment.vehicle}
+                        </p>
 
-                    <td className="p-4">
-                      {appointment.date}
-                    </td>
+                        <p className="text-sm text-slate-500">
+                          {appointment.client}{" "}
+                          ·{" "}
+                          {appointment.reason}
+                        </p>
 
-                    <td className="p-4">
-                      {appointment.time}
-                    </td>
+                      </div>
 
-                    <td className="p-4">
-                      {appointment.client}
-                    </td>
-
-                    <td className="p-4">
-                      {appointment.vehicle}
-                    </td>
-
-                    <td className="p-4">
-                      {appointment.reason}
-                    </td>
-
-                    <td className="p-4">
                       <span
                         className={`px-3 py-1 rounded-full text-sm font-semibold ${
                           appointment.status ===
@@ -380,50 +464,180 @@ export default function AppointmentsPage() {
                       >
                         {appointment.status}
                       </span>
-                    </td>
 
-                    <td className="p-4">
+                    </div>
+                  )
+                )}
 
-                      <div className="flex justify-center gap-2">
+              </div>
+            )}
 
-                        <button
-                          onClick={() =>
-                            handleEdit(
-                              appointment
-                            )
-                          }
-                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg"
-                        >
-                          Editar
-                        </button>
+          </div>
 
-                        <button
-                          onClick={() =>
-                            handleDelete(
-                              appointment.id
-                            )
-                          }
-                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg"
-                        >
-                          Eliminar
-                        </button>
+          {/* TABLA */}
 
-                      </div>
+          <div className="overflow-x-auto">
 
+            <table className="w-full">
+
+              <thead className="bg-slate-100">
+
+                <tr>
+
+                  <th className="text-left p-4">
+                    Fecha
+                  </th>
+
+                  <th className="text-left p-4">
+                    Hora
+                  </th>
+
+                  <th className="text-left p-4">
+                    Cliente
+                  </th>
+
+                  <th className="text-left p-4">
+                    Vehículo
+                  </th>
+
+                  <th className="text-left p-4">
+                    Motivo
+                  </th>
+
+                  <th className="text-left p-4">
+                    Estado
+                  </th>
+
+                  <th className="text-center p-4">
+                    Acciones
+                  </th>
+
+                </tr>
+
+              </thead>
+
+              <tbody>
+
+                {filteredAppointments.length ===
+                0 ? (
+                  <tr>
+
+                    <td
+                      colSpan={7}
+                      className="p-8 text-center text-slate-500"
+                    >
+                      No se encontraron
+                      citas.
                     </td>
 
                   </tr>
-                )
-              )}
+                ) : (
+                  filteredAppointments.map(
+                    (appointment) => (
+                      <tr
+                        key={appointment.id}
+                        className="border-t hover:bg-slate-50"
+                      >
 
-            </tbody>
+                        <td className="p-4">
+                          {new Date(
+                            `${appointment.date}T00:00:00`
+                          ).toLocaleDateString(
+                            "es-ES",
+                            {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            }
+                          )}
+                        </td>
 
-          </table>
+                        <td className="p-4 font-medium">
+                          {appointment.time.slice(
+                            0,
+                            5
+                          )}
+                        </td>
+
+                        <td className="p-4">
+                          {appointment.client}
+                        </td>
+
+                        <td className="p-4">
+                          {appointment.vehicle}
+                        </td>
+
+                        <td className="p-4">
+                          {appointment.reason}
+                        </td>
+
+                        <td className="p-4">
+
+                          <span
+                            className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                              appointment.status ===
+                              "Completada"
+                                ? "bg-green-100 text-green-700"
+                                : appointment.status ===
+                                  "Cancelada"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-yellow-100 text-yellow-700"
+                            }`}
+                          >
+                            {
+                              appointment.status
+                            }
+                          </span>
+
+                        </td>
+
+                        <td className="p-4">
+
+                          <div className="flex justify-center gap-2">
+
+                            <button
+                              onClick={() =>
+                                handleEdit(
+                                  appointment
+                                )
+                              }
+                              className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg"
+                            >
+                              Editar
+                            </button>
+
+                            <button
+                              onClick={() =>
+                                handleDelete(
+                                  appointment.id
+                                )
+                              }
+                              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg"
+                            >
+                              Eliminar
+                            </button>
+
+                          </div>
+
+                        </td>
+
+                      </tr>
+                    )
+                  )
+                )}
+
+              </tbody>
+
+            </table>
+
+          </div>
 
         </div>
       )}
 
-      {/* MODAL */}
+      {/* =========================
+          MODAL
+      ========================= */}
 
       {open && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -436,10 +650,14 @@ export default function AppointmentsPage() {
                 : "Nueva cita"}
             </h2>
 
+            {/* VEHÍCULO */}
+
             <select
               value={vehicleId}
               onChange={(e) =>
-                setVehicleId(e.target.value)
+                setVehicleId(
+                  e.target.value
+                )
               }
               className="w-full border rounded-xl p-3 mb-4"
             >
@@ -448,19 +666,23 @@ export default function AppointmentsPage() {
                 Seleccionar vehículo
               </option>
 
-              {vehicles.map((vehicle) => (
-                <option
-                  key={vehicle.id}
-                  value={vehicle.id}
-                >
-                  {vehicle.brand}{" "}
-                  {vehicle.model} —{" "}
-                  {vehicle.plate} —{" "}
-                  {vehicle.client}
-                </option>
-              ))}
+              {vehicles.map(
+                (vehicle) => (
+                  <option
+                    key={vehicle.id}
+                    value={vehicle.id}
+                  >
+                    {vehicle.brand}{" "}
+                    {vehicle.model} —{" "}
+                    {vehicle.plate} —{" "}
+                    {vehicle.client}
+                  </option>
+                )
+              )}
 
             </select>
+
+            {/* FECHA */}
 
             <input
               type="date"
@@ -471,6 +693,8 @@ export default function AppointmentsPage() {
               className="w-full border rounded-xl p-3 mb-4"
             />
 
+            {/* HORA */}
+
             <input
               type="time"
               value={time}
@@ -479,6 +703,8 @@ export default function AppointmentsPage() {
               }
               className="w-full border rounded-xl p-3 mb-4"
             />
+
+            {/* MOTIVO */}
 
             <input
               value={reason}
@@ -489,6 +715,8 @@ export default function AppointmentsPage() {
               className="w-full border rounded-xl p-3 mb-4"
             />
 
+            {/* ESTADO */}
+
             <select
               value={status}
               onChange={(e) =>
@@ -496,6 +724,7 @@ export default function AppointmentsPage() {
               }
               className="w-full border rounded-xl p-3 mb-6"
             >
+
               <option value="Pendiente">
                 Pendiente
               </option>
@@ -507,7 +736,10 @@ export default function AppointmentsPage() {
               <option value="Cancelada">
                 Cancelada
               </option>
+
             </select>
+
+            {/* BOTONES */}
 
             <div className="flex justify-end gap-4">
 

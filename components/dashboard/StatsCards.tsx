@@ -43,30 +43,32 @@ export default function StatsCards() {
         })
         .eq("date", today);
 
-      setVehicles(
-        vehiclesResult.count || 0
-      );
+      // FACTURACIÓN
+      const repairsResult = await supabase
+        .from("repairs")
+        .select("price");
 
-      setClients(
-        clientsResult.count || 0
-      );
+      if (repairsResult.error) {
+        console.error(
+          "Error cargando facturación:",
+          repairsResult.error
+        );
+      } else {
+        const totalBilling =
+          (repairsResult.data || []).reduce(
+            (total, repair) =>
+              total + Number(repair.price || 0),
+            0
+          );
 
+        setBilling(totalBilling);
+      }
+
+      setVehicles(vehiclesResult.count || 0);
+      setClients(clientsResult.count || 0);
       setAppointments(
         appointmentsResult.count || 0
       );
-      // FACTURACIÓN
-      const invoicesResult = await supabase
-        .from("invoices")
-        .select("total");
-
-      const billingTotal =
-        invoicesResult.data?.reduce(
-          (sum, invoice) =>
-            sum + Number(invoice.total || 0),
-          0
-        ) || 0;
-
-      setBilling(billingTotal);
     };
 
     loadStats();
@@ -92,7 +94,7 @@ export default function StatsCards() {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
 
       {stats.map((stat) => (
         <div

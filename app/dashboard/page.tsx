@@ -5,6 +5,8 @@ import StatsCards from "@/components/dashboard/StatsCards";
 import RepairsTable from "@/components/dashboard/RepairsTable";
 import { createClient } from "@/lib/supabase/client";
 import WorkshopSummary from "@/components/dashboard/WorkshopSummary";
+import QuickActions from "@/components/dashboard/QuickActions";
+import UpcomingAppointments from "@/components/dashboard/UpcomingAppointments";
 
 type Repair = {
   id: number;
@@ -48,12 +50,41 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div>
-      <StatsCards />
-      <WorkshopSummary />
+    <div className="p-8">
 
+      {/* TÍTULO */}
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold">
+          Dashboard
+        </h1>
+
+        <p className="text-slate-500 mt-2">
+          Resumen del estado de tu taller
+        </p>
+      </div>
+
+      {/* ESTADÍSTICAS */}
+      <StatsCards />
+
+      {/* RESUMEN + ACCIONES */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+
+        <WorkshopSummary />
+
+        <QuickActions />
+
+      </div>
+
+      {/* PRÓXIMAS CITAS */}
+      <div className="mt-8">
+        <UpcomingAppointments />
+      </div>
+
+      {/* ÚLTIMAS REPARACIONES */}
       <div className="bg-white rounded-2xl shadow overflow-hidden mt-8">
+
         <div className="p-6 border-b">
+
           <h2 className="text-2xl font-bold">
             Últimas reparaciones
           </h2>
@@ -61,6 +92,7 @@ export default function DashboardPage() {
           <p className="text-slate-500 mt-1">
             Las últimas reparaciones registradas en el taller
           </p>
+
         </div>
 
         {loading ? (
@@ -74,9 +106,13 @@ export default function DashboardPage() {
         ) : (
           <RepairsTable
             repairs={repairs}
+            onDelete={() => {}}
+            onEdit={() => {}}
           />
         )}
+
       </div>
+
     </div>
   );
 }

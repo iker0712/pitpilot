@@ -7,85 +7,46 @@ export default function WorkshopSummary() {
   const supabase = createClient();
 
   const [inProgress, setInProgress] = useState(0);
+  const [waitingParts, setWaitingParts] = useState(0);
   const [finished, setFinished] = useState(0);
-  const [pendingInvoices, setPendingInvoices] = useState(0);
-  const [monthlyIncome, setMonthlyIncome] = useState(0);
 
   useEffect(() => {
     const loadSummary = async () => {
-      // REPARACIONES EN PROCESO
-      const inProgressResult = await supabase
+      const { data, error } = await supabase
         .from("repairs")
-        .select("*", {
-          count: "exact",
-          head: true,
-        })
-        .eq("status", "En proceso");
+        .select("status");
 
-      // REPARACIONES FINALIZADAS
-      const finishedResult = await supabase
-        .from("repairs")
-        .select("*", {
-          count: "exact",
-          head: true,
-        })
-        .eq("status", "Finalizado");
+      if (error) {
+        console.error(
+          "Error cargando estado del taller:",
+          error
+        );
+        return;
+      }
 
-      // FACTURAS PENDIENTES
-      const pendingResult = await supabase
-        .from("invoices")
-        .select("*", {
-          count: "exact",
-          head: true,
-        })
-        .eq("status", "Pendiente");
-
-      // INGRESOS DEL MES
-      const now = new Date();
-
-      const firstDay = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        1
-      )
-        .toISOString()
-        .split("T")[0];
-
-      const lastDay = new Date(
-        now.getFullYear(),
-        now.getMonth() + 1,
-        0
-      )
-        .toISOString()
-        .split("T")[0];
-
-      const incomeResult = await supabase
-        .from("invoices")
-        .select("total")
-        .eq("status", "Pagada")
-        .gte("date", firstDay)
-        .lte("date", lastDay);
-
-      const income =
-        incomeResult.data?.reduce(
-          (sum, invoice) =>
-            sum + Number(invoice.total || 0),
-          0
-        ) || 0;
+      const repairs = data || [];
 
       setInProgress(
-        inProgressResult.count || 0
+        repairs.filter(
+          (repair) =>
+            repair.status === "En proceso"
+        ).length
+      );
+
+      setWaitingParts(
+        repairs.filter(
+          (repair) =>
+            repair.status ===
+            "Esperando piezas"
+        ).length
       );
 
       setFinished(
-        finishedResult.count || 0
+        repairs.filter(
+          (repair) =>
+            repair.status === "Finalizado"
+        ).length
       );
-
-      setPendingInvoices(
-        pendingResult.count || 0
-      );
-
-      setMonthlyIncome(income);
     };
 
     loadSummary();
@@ -93,45 +54,60 @@ export default function WorkshopSummary() {
 
   const stats = [
     {
-      title: "Reparaciones en proceso",
+      title: "En proceso",
       value: inProgress,
-      color: "text-yellow-600",
+      description: "Vehículos en reparación",
+      className:
+        "bg-yellow-50 border-yellow-200",
     },
     {
-      title: "Reparaciones finalizadas",
+      title: "Esperando piezas",
+      value: waitingParts,
+      description: "Pendientes de piezas",
+      className:
+        "bg-red-50 border-red-200",
+    },
+    {
+      title: "Finalizadas",
       value: finished,
-      color: "text-green-600",
-    },
-    {
-      title: "Facturas pendientes",
-      value: pendingInvoices,
-      color: "text-red-600",
-    },
-    {
-      title: "Ingresos del mes",
-      value: `${monthlyIncome.toFixed(2)}€`,
-      color: "text-blue-600",
+      description: "Reparaciones terminadas",
+      className:
+        "bg-green-50 border-green-200",
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mt-8">
-      {stats.map((stat) => (
-        <div
-          key={stat.title}
-          className="bg-white rounded-2xl p-6 shadow"
-        >
-          <p className="text-slate-500">
-            {stat.title}
-          </p>
+    <div className="mt-8">
 
-          <h2
-            className={`text-3xl font-bold mt-2 ${stat.color}`}
+      <h2 className="text-2xl font-bold mb-4">
+        Estado del taller
+      </h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+        {stats.map((stat) => (
+          <div
+            key={stat.title}
+            className={`rounded-2xl border p-6 ${stat.className}`}
           >
-            {stat.value}
-          </h2>
-        </div>
-      ))}
+
+            <p className="text-slate-600 font-medium">
+              {stat.title}
+            </p>
+
+            <p className="text-4xl font-bold mt-2">
+              {stat.value}
+            </p>
+
+            <p className="text-sm text-slate-500 mt-2">
+              {stat.description}
+            </p>
+
+          </div>
+        ))}
+
+      </div>
+
     </div>
   );
 }

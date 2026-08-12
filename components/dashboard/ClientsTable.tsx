@@ -11,17 +11,21 @@ export default function ClientsTable({
   clients,
   onDelete,
   onEdit,
+  onView,
 }: {
   clients: Client[];
   onDelete: (id: number) => void;
   onEdit: (client: Client) => void;
+  onView: (client: Client) => void;
 }) {
   return (
     <div className="bg-white rounded-2xl shadow overflow-hidden">
+
       <table className="w-full">
 
         <thead className="bg-slate-100">
           <tr>
+
             <th className="text-left p-4">
               Nombre
             </th>
@@ -37,6 +41,7 @@ export default function ClientsTable({
             <th className="text-center p-4">
               Acciones
             </th>
+
           </tr>
         </thead>
 
@@ -60,7 +65,17 @@ export default function ClientsTable({
               </td>
 
               <td className="p-4">
+
                 <div className="flex justify-center gap-2">
+
+                  <button
+                    onClick={() =>
+                      onView(client)
+                    }
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg"
+                  >
+                    Ver ficha
+                  </button>
 
                   <button
                     onClick={() =>
@@ -81,6 +96,7 @@ export default function ClientsTable({
                   </button>
 
                 </div>
+
               </td>
 
             </tr>
@@ -88,6 +104,7 @@ export default function ClientsTable({
         </tbody>
 
       </table>
+
     </div>
   );
 }
