@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import jsPDF from "jspdf";
 
 type Invoice = {
   id: number;
@@ -46,6 +47,10 @@ export default function InvoicesPage() {
     ? Number(subtotal) + iva
     : 0;
 
+  // =========================
+  // CARGAR DATOS
+  // =========================
+
   useEffect(() => {
     const loadData = async () => {
       const [invoicesResult, repairsResult] =
@@ -85,6 +90,10 @@ export default function InvoicesPage() {
     loadData();
   }, []);
 
+  // =========================
+  // RESET FORMULARIO
+  // =========================
+
   const resetForm = () => {
     setRepairId("");
     setDate(
@@ -94,6 +103,10 @@ export default function InvoicesPage() {
     setStatus("Pendiente");
     setEditingId(null);
   };
+
+  // =========================
+  // CAMBIAR REPARACIÓN
+  // =========================
 
   const handleRepairChange = (
     value: string
@@ -111,6 +124,10 @@ export default function InvoicesPage() {
       );
     }
   };
+
+  // =========================
+  // GUARDAR / EDITAR
+  // =========================
 
   const handleSave = async () => {
     if (!repairId || !date || !subtotal) {
@@ -208,16 +225,35 @@ export default function InvoicesPage() {
     setOpen(false);
   };
 
+  // =========================
+  // EDITAR
+  // =========================
+
   const handleEdit = (invoice: Invoice) => {
     setEditingId(invoice.id);
-    setRepairId(String(invoice.repair_id));
+
+    setRepairId(
+      String(invoice.repair_id)
+    );
+
     setDate(invoice.date);
-    setSubtotal(String(invoice.subtotal));
+
+    setSubtotal(
+      String(invoice.subtotal)
+    );
+
     setStatus(invoice.status);
+
     setOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
+  // =========================
+  // ELIMINAR
+  // =========================
+
+  const handleDelete = async (
+    id: number
+  ) => {
     const confirmDelete = confirm(
       "¿Seguro que quieres eliminar esta factura?"
     );
@@ -246,27 +282,312 @@ export default function InvoicesPage() {
 
     setInvoices((current) =>
       current.filter(
-        (invoice) => invoice.id !== id
+        (invoice) =>
+          invoice.id !== id
       )
     );
   };
+
+  // =========================
+  // GENERAR PDF
+  // =========================
+
+  const handleDownloadPDF = (
+    invoice: Invoice
+  ) => {
+    const doc = new jsPDF();
+
+    const invoiceSubtotal =
+      Number(invoice.subtotal);
+
+    const invoiceIva =
+      Number(invoice.iva);
+
+    const invoiceTotal =
+      Number(invoice.total);
+
+    // CABECERA
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+
+    doc.text(
+      "PITPILOT",
+      20,
+      25
+    );
+
+    doc.setFontSize(10);
+    doc.setFont(
+      "helvetica",
+      "normal"
+    );
+
+    doc.text(
+      "Gestión inteligente para talleres",
+      20,
+      32
+    );
+
+    // FACTURA
+    doc.setFontSize(18);
+    doc.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    doc.text(
+      "FACTURA",
+      150,
+      25
+    );
+
+    doc.setFontSize(11);
+    doc.setFont(
+      "helvetica",
+      "normal"
+    );
+
+    doc.text(
+      `Nº ${String(invoice.id).padStart(
+        5,
+        "0"
+      )}`,
+      150,
+      33
+    );
+
+    doc.text(
+      `Fecha: ${invoice.date}`,
+      150,
+      40
+    );
+
+    // LÍNEA
+    doc.line(
+      20,
+      48,
+      190,
+      48
+    );
+
+    // CLIENTE
+    doc.setFontSize(12);
+    doc.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    doc.text(
+      "CLIENTE",
+      20,
+      62
+    );
+
+    doc.setFontSize(11);
+    doc.setFont(
+      "helvetica",
+      "normal"
+    );
+
+    doc.text(
+      invoice.client,
+      20,
+      70
+    );
+
+    // VEHÍCULO
+    doc.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    doc.text(
+      "VEHÍCULO",
+      20,
+      85
+    );
+
+    doc.setFont(
+      "helvetica",
+      "normal"
+    );
+
+    doc.text(
+      invoice.vehicle,
+      20,
+      93
+    );
+
+    // DETALLE
+    doc.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    doc.text(
+      "CONCEPTO",
+      20,
+      115
+    );
+
+    doc.text(
+      "IMPORTE",
+      160,
+      115
+    );
+
+    doc.line(
+      20,
+      120,
+      190,
+      120
+    );
+
+    doc.setFont(
+      "helvetica",
+      "normal"
+    );
+
+    doc.text(
+      "Reparación / servicio",
+      20,
+      132
+    );
+
+    doc.text(
+      `${invoiceSubtotal.toFixed(
+        2
+      )} €`,
+      160,
+      132
+    );
+
+    doc.line(
+      20,
+      140,
+      190,
+      140
+    );
+
+    // TOTALES
+    doc.text(
+      "Subtotal",
+      130,
+      155
+    );
+
+    doc.text(
+      `${invoiceSubtotal.toFixed(
+        2
+      )} €`,
+      170,
+      155
+    );
+
+    doc.text(
+      "IVA (21%)",
+      130,
+      165
+    );
+
+    doc.text(
+      `${invoiceIva.toFixed(
+        2
+      )} €`,
+      170,
+      165
+    );
+
+    doc.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    doc.setFontSize(14);
+
+    doc.text(
+      "TOTAL",
+      130,
+      180
+    );
+
+    doc.text(
+      `${invoiceTotal.toFixed(
+        2
+      )} €`,
+      170,
+      180
+    );
+
+    // ESTADO
+    doc.setFontSize(11);
+
+    doc.text(
+      `Estado: ${invoice.status}`,
+      20,
+      180
+    );
+
+    // PIE
+    doc.setFont(
+      "helvetica",
+      "normal"
+    );
+
+    doc.setFontSize(9);
+
+    doc.text(
+      "Factura generada con PitPilot",
+      20,
+      270
+    );
+
+    doc.text(
+      "Todo el taller organizado en una única pantalla.",
+      20,
+      277
+    );
+
+    // DESCARGAR
+    doc.save(
+      `factura-${String(
+        invoice.id
+      ).padStart(5, "0")}.pdf`
+    );
+  };
+
+  // =========================
+  // BUSCAR
+  // =========================
 
   const filteredInvoices =
     invoices.filter(
       (invoice) =>
         invoice.client
           .toLowerCase()
-          .includes(search.toLowerCase()) ||
+          .includes(
+            search.toLowerCase()
+          ) ||
         invoice.vehicle
           .toLowerCase()
-          .includes(search.toLowerCase()) ||
+          .includes(
+            search.toLowerCase()
+          ) ||
         invoice.status
           .toLowerCase()
-          .includes(search.toLowerCase())
+          .includes(
+            search.toLowerCase()
+          )
     );
+
+  // =========================
+  // INTERFAZ
+  // =========================
 
   return (
     <div>
+
+      {/* CABECERA */}
 
       <div className="flex justify-between items-center mb-8">
 
@@ -286,6 +607,8 @@ export default function InvoicesPage() {
 
       </div>
 
+      {/* BUSCADOR */}
+
       <input
         type="text"
         placeholder="🔍 Buscar factura..."
@@ -295,6 +618,8 @@ export default function InvoicesPage() {
         }
         className="w-full border rounded-xl p-3 mb-6"
       />
+
+      {/* TABLA */}
 
       {loading ? (
         <div className="bg-white rounded-2xl shadow p-8 text-center">
@@ -308,6 +633,7 @@ export default function InvoicesPage() {
             <thead className="bg-slate-100">
 
               <tr>
+
                 <th className="text-left p-4">
                   Cliente
                 </th>
@@ -339,6 +665,7 @@ export default function InvoicesPage() {
                 <th className="text-left p-4">
                   Acciones
                 </th>
+
               </tr>
 
             </thead>
@@ -347,6 +674,7 @@ export default function InvoicesPage() {
 
               {filteredInvoices.map(
                 (invoice) => (
+
                   <tr
                     key={invoice.id}
                     className="border-t hover:bg-slate-50"
@@ -401,14 +729,33 @@ export default function InvoicesPage() {
 
                       <div className="flex gap-2">
 
+                        {/* PDF */}
+
                         <button
                           onClick={() =>
-                            handleEdit(invoice)
+                            handleDownloadPDF(
+                              invoice
+                            )
+                          }
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg"
+                        >
+                          PDF
+                        </button>
+
+                        {/* EDITAR */}
+
+                        <button
+                          onClick={() =>
+                            handleEdit(
+                              invoice
+                            )
                           }
                           className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg"
                         >
                           Editar
                         </button>
+
+                        {/* ELIMINAR */}
 
                         <button
                           onClick={() =>
@@ -426,6 +773,7 @@ export default function InvoicesPage() {
                     </td>
 
                   </tr>
+
                 )
               )}
 
@@ -433,7 +781,8 @@ export default function InvoicesPage() {
 
           </table>
 
-          {filteredInvoices.length === 0 && (
+          {filteredInvoices.length ===
+            0 && (
             <div className="p-8 text-center text-slate-500">
               No hay facturas registradas.
             </div>
@@ -442,16 +791,23 @@ export default function InvoicesPage() {
         </div>
       )}
 
+      {/* MODAL */}
+
       {open && (
+
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
 
           <div className="bg-white rounded-2xl p-8 w-[500px] shadow-xl">
 
             <h2 className="text-3xl font-bold mb-6">
+
               {editingId !== null
                 ? "Editar factura"
                 : "Nueva factura"}
+
             </h2>
+
+            {/* REPARACIÓN */}
 
             <select
               value={repairId}
@@ -462,68 +818,99 @@ export default function InvoicesPage() {
               }
               className="w-full border rounded-xl p-3 mb-4"
             >
+
               <option value="">
                 Seleccionar reparación
               </option>
 
-              {repairs.map((repair) => (
-                <option
-                  key={repair.id}
-                  value={repair.id}
-                >
-                  {repair.client} —{" "}
-                  {repair.vehicle} —{" "}
-                  {repair.price}€
-                </option>
-              ))}
+              {repairs.map(
+                (repair) => (
+
+                  <option
+                    key={repair.id}
+                    value={repair.id}
+                  >
+
+                    {repair.client} —{" "}
+                    {repair.vehicle} —{" "}
+                    {repair.price}€
+
+                  </option>
+
+                )
+              )}
+
             </select>
+
+            {/* FECHA */}
 
             <input
               type="date"
               value={date}
               onChange={(e) =>
-                setDate(e.target.value)
+                setDate(
+                  e.target.value
+                )
               }
               className="w-full border rounded-xl p-3 mb-4"
             />
+
+            {/* SUBTOTAL */}
 
             <input
               type="number"
               value={subtotal}
               onChange={(e) =>
-                setSubtotal(e.target.value)
+                setSubtotal(
+                  e.target.value
+                )
               }
               placeholder="Subtotal (€)"
               className="w-full border rounded-xl p-3 mb-4"
             />
 
+            {/* RESUMEN */}
+
             <div className="bg-slate-50 rounded-xl p-4 mb-6">
 
               <div className="flex justify-between mb-2">
-                <span>IVA (21%)</span>
+
+                <span>
+                  IVA (21%)
+                </span>
 
                 <span>
                   {iva.toFixed(2)}€
                 </span>
+
               </div>
 
               <div className="flex justify-between font-bold text-lg">
-                <span>Total</span>
+
+                <span>
+                  Total
+                </span>
 
                 <span>
                   {total.toFixed(2)}€
                 </span>
+
               </div>
 
             </div>
 
+            {/* ESTADO */}
+
             <select
               value={status}
               onChange={(e) =>
-                setStatus(e.target.value)
+                setStatus(
+                  e.target.value
+                )
               }
               className="w-full border rounded-xl p-3 mb-6"
             >
+
               <option value="Pendiente">
                 Pendiente
               </option>
@@ -531,7 +918,10 @@ export default function InvoicesPage() {
               <option value="Pagada">
                 Pagada
               </option>
+
             </select>
+
+            {/* BOTONES */}
 
             <div className="flex justify-end gap-4">
 
@@ -549,9 +939,11 @@ export default function InvoicesPage() {
                 onClick={handleSave}
                 className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
               >
+
                 {editingId !== null
                   ? "Guardar cambios"
                   : "Guardar"}
+
               </button>
 
             </div>
@@ -559,6 +951,7 @@ export default function InvoicesPage() {
           </div>
 
         </div>
+
       )}
 
     </div>
