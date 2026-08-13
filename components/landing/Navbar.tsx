@@ -11,9 +11,12 @@ export default function Navbar() {
         <a href="#">Contacto</a>
       </div>
 
-      <button className="rounded-xl bg-blue-600 px-6 py-3 text-white font-semibold hover:bg-blue-700 transition">
+      <a
+        href="/demo"
+        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold"
+      >
         Solicitar demo
-      </button>
+      </a>
     </nav>
   );
 }
